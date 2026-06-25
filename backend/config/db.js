@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const MONGODB_URI = 'mongodb://localhost:27017/Digiwebclub_calling';
+const MONGODB_URI = 'mongodb+srv://inotebook:ayush2004@inotebook.ogkw3y9.mongodb.net/?appName=inotebook/Digiwebclub_calling';
 
 async function connectDb() {
   try {
@@ -14,7 +14,7 @@ async function connectDb() {
     if (!admin) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('admin', salt);
-      
+
       await User.create({
         name: 'Administrator',
         userId: 'admin',
