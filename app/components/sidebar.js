@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
+const Sidebar = ({ activeTab, setActiveTab, user, onLogout, isOpen = true }) => {
   const companyItems = [
     {
       id: 'dashboard',
@@ -21,24 +21,6 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
       )
     },
     {
-      id: 'calling',
-      label: 'Calling (Dialer)',
-      icon: (
-        <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-        </svg>
-      )
-    },
-    {
-      id: 'call-logs',
-      label: 'Call Logs',
-      icon: (
-        <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-        </svg>
-      )
-    },
-    {
       id: 'follow-ups',
       label: 'Follow-ups',
       icon: (
@@ -50,15 +32,6 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
   ];
 
   const featureItems = [
-    {
-      id: 'reports',
-      label: 'Reports & Analytics',
-      icon: (
-        <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      )
-    },
     ...(user?.role === 'admin' ? [
       {
         id: 'users',
@@ -83,15 +56,17 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between h-[calc(100vh-64px)] sticky top-16 select-none shrink-0 py-4">
+    <aside className={`${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 ease-in-out bg-white border-r border-slate-200/80 flex flex-col justify-between h-[calc(100vh-64px)] sticky top-16 select-none shrink-0 py-4 overflow-x-hidden`}>
       {/* Scrollable Navigation section */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         
         {/* YOUR COMPANY SECTION */}
-        <div className="px-4 mb-6">
-          <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-2 px-1">
-            Your Company
-          </span>
+        <div className={`mb-6 ${isOpen ? 'px-4' : 'px-2'}`}>
+          {isOpen && (
+            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-2 px-1">
+              Your Company
+            </span>
+          )}
           <nav className="flex flex-col gap-0.5">
             {companyItems.map((item) => {
               const isActive = activeTab === item.id;
@@ -99,21 +74,26 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded text-xs font-semibold tracking-wide transition-all text-left cursor-pointer group ${
+                  title={!isOpen ? item.label : undefined}
+                  className={`w-full flex items-center ${isOpen ? 'justify-between px-3 py-2.5' : 'justify-center p-3'} rounded text-xs font-semibold tracking-wide transition-all text-left cursor-pointer group ${
                     isActive
                       ? 'bg-sky-50/70 text-[#2d8cf0] font-bold'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`transition-colors ${isActive ? 'text-[#2d8cf0]' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                  <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
+                    <span className={`transition-colors shrink-0 ${isActive ? 'text-[#2d8cf0]' : 'text-slate-400 group-hover:text-slate-600'}`}>
                       {item.icon}
                     </span>
-                    <span>{item.label}</span>
+                    {isOpen && (
+                      <span className="whitespace-nowrap">{item.label}</span>
+                    )}
                   </div>
-                  <span className={`text-[10px] transition-transform ${isActive ? 'text-[#2d8cf0]' : 'text-slate-300 group-hover:text-slate-400'}`}>
-                    ▶
-                  </span>
+                  {isOpen && (
+                    <span className={`text-[10px] transition-transform ${isActive ? 'text-[#2d8cf0]' : 'text-slate-300 group-hover:text-slate-400'}`}>
+                      ▶
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -121,10 +101,12 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
         </div>
 
         {/* OUR FEATURES SECTION */}
-        <div className="px-4">
-          <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-2 px-1">
-            Our Features
-          </span>
+        <div className={`${isOpen ? 'px-4' : 'px-2'}`}>
+          {isOpen && (
+            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-2 px-1">
+              Our Features
+            </span>
+          )}
           <nav className="flex flex-col gap-0.5">
             {featureItems.map((item) => {
               const isActive = activeTab === item.id;
@@ -132,21 +114,26 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded text-xs font-semibold tracking-wide transition-all text-left cursor-pointer group ${
+                  title={!isOpen ? item.label : undefined}
+                  className={`w-full flex items-center ${isOpen ? 'justify-between px-3 py-2.5' : 'justify-center p-3'} rounded text-xs font-semibold tracking-wide transition-all text-left cursor-pointer group ${
                     isActive
                       ? 'bg-sky-50/70 text-[#2d8cf0] font-bold'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`transition-colors ${isActive ? 'text-[#2d8cf0]' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                  <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
+                    <span className={`transition-colors shrink-0 ${isActive ? 'text-[#2d8cf0]' : 'text-slate-400 group-hover:text-slate-600'}`}>
                       {item.icon}
                     </span>
-                    <span>{item.label}</span>
+                    {isOpen && (
+                      <span className="whitespace-nowrap">{item.label}</span>
+                    )}
                   </div>
-                  <span className={`text-[10px] transition-transform ${isActive ? 'text-[#2d8cf0]' : 'text-slate-300 group-hover:text-slate-400'}`}>
-                    ▶
-                  </span>
+                  {isOpen && (
+                    <span className={`text-[10px] transition-transform ${isActive ? 'text-[#2d8cf0]' : 'text-slate-300 group-hover:text-slate-400'}`}>
+                      ▶
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -156,12 +143,19 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
       </div>
 
       {/* Logout button at Sidebar bottom */}
-      <div className="px-4 pt-4 border-t border-slate-100 mt-auto">
+      <div className={`pt-4 border-t border-slate-100 mt-auto ${isOpen ? 'px-4' : 'px-2'}`}>
         <button
           onClick={onLogout}
-          className="w-full py-2 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold uppercase rounded tracking-wide transition-colors cursor-pointer text-center"
+          title={!isOpen ? "Logout" : undefined}
+          className="w-full py-2 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold uppercase rounded tracking-wide transition-colors cursor-pointer flex justify-center items-center gap-2"
         >
-          Logout
+          {!isOpen ? (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          ) : (
+            "Logout"
+          )}
         </button>
       </div>
     </aside>

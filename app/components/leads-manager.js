@@ -2,28 +2,29 @@ import React, { useState, useEffect } from 'react';
 
 // Base Standard Columns requested by user
 const BASE_COLUMNS = [
-  { key: 'leadDate', label: 'Lead Date', type: 'date' },
-  { key: 'areaZone', label: 'Area Zone', type: 'text' },
-  { key: 'businessName', label: 'Business Name', type: 'text' },
-  { key: 'name', label: 'Client Name', type: 'text', required: true },
-  { key: 'address', label: 'Address', type: 'text' },
-  { key: 'googleMap', label: 'Google Map', type: 'url' },
-  { key: 'website', label: 'Website', type: 'url' },
-  { key: 'instagram', label: 'Instagram', type: 'url' },
-  { key: 'facebook', label: 'Facebook', type: 'url' },
-  { key: 'twitterX', label: 'Twitter X', type: 'url' },
-  { key: 'youtube', label: 'YouTube', type: 'url' },
-  { key: 'phone', label: 'Phone Number', type: 'text', required: true },
-  { key: 'email', label: 'Email', type: 'email', required: true },
-  { key: 'remark', label: 'Remark', type: 'text' },
-  { key: 'startCallDate', label: 'Start Call Date', type: 'date' },
-  { key: 'lastCallDate', label: 'Last Call Date', type: 'date' },
-  { key: 'remark2', label: 'Remark 2', type: 'text' },
-  { key: 'status', label: 'Status', type: 'select', options: ['New', 'Active', 'Contacted', 'Follow-up Required', 'No Answer'] },
-  { key: 'campaign', label: 'Source Campaign', type: 'text' }
+  { key: 'category', label: 'Category', type: 'text' },
+  { key: 'applicationNo', label: 'Application No.', type: 'text' },
+  { key: 'sector', label: 'Sector', type: 'text' },
+  { key: 'title', label: 'Title', type: 'text' },
+  { key: 'name', label: 'Name', type: 'text', required: true },
+  { key: 'designation', label: 'Designation', type: 'text' },
+  { key: 'company', label: 'Company', type: 'text' },
+  { key: 'unitName', label: 'Unit Name', type: 'text' },
+  { key: 'add1', label: 'Add 1', type: 'text' },
+  { key: 'add2', label: 'Add 2', type: 'text' },
+  { key: 'add3', label: 'Add 3', type: 'text' },
+  { key: 'cityPinCode', label: 'City & Pin Code', type: 'text' },
+  { key: 'state', label: 'State', type: 'text' },
+  { key: 'dearSirMadam', label: 'Dear Sir, Madam', type: 'text' },
+  { key: 'phone', label: 'Phone', type: 'text', required: true },
+  { key: 'mobile', label: 'Mobile', type: 'text' },
+  { key: 'email', label: 'E-mail', type: 'email', required: true },
+  { key: 'trophy1', label: 'Trophy1', type: 'text' },
+  { key: 'trophy2', label: 'Trophy2', type: 'text' },
+  { key: 'award', label: 'Award', type: 'text' }
 ];
 
-export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
+export default function LeadsManager({ leads, setLeads, user }) {
   // Local state for dynamic columns
   const [customColumns, setCustomColumns] = useState([]);
   const [isClient, setIsClient] = useState(false);
@@ -178,12 +179,7 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
 
   // Open modal for Adding Lead
   const handleOpenAddLead = () => {
-    setFormValues({
-      status: 'New',
-      campaign: 'Direct Outreach',
-      progress: 10,
-      leadDate: new Date().toISOString().split('T')[0]
-    });
+    setFormValues({});
     setLeadModal({ isOpen: true, type: 'add', leadId: null });
     setActiveFormTab('general');
   };
@@ -199,7 +195,12 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
   const handleDeleteLead = async (id, name) => {
     if (window.confirm(`Are you sure you want to delete lead: "${name}"?`)) {
       try {
-        const response = await fetch(`http://localhost:5000/api/leads/${id}`, { method: 'DELETE' });
+        const response = await fetch(`http://localhost:5000/api/leads/${id}`, { 
+          method: 'DELETE',
+          headers: {
+            'x-user-id': user?.id || user?._id || ''
+          }
+        });
         const data = await response.json();
         if (data.success) {
           setLeads(prev => prev.filter(l => l.id !== id));
@@ -217,16 +218,11 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
   const handleLeadFormSubmit = async (e) => {
     e.preventDefault();
     if (!formValues.name || !formValues.email || !formValues.phone) {
-      alert('Client Name, Email, and Phone Number are required fields.');
+      alert('Name, Email, and Phone are required fields.');
       return;
     }
 
-    const progressVal = formValues.status === 'Active' ? 80 :
-                        formValues.status === 'Contacted' ? 45 :
-                        formValues.status === 'Follow-up Required' ? 60 :
-                        formValues.status === 'No Answer' ? 0 : 10;
-
-    const payload = { ...formValues, progress: progressVal };
+    const payload = { ...formValues };
 
     try {
       if (leadModal.type === 'add') {
@@ -246,7 +242,10 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
       } else {
         const response = await fetch(`http://localhost:5000/api/leads/${leadModal.leadId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-user-id': user?.id || user?._id || ''
+          },
           body: JSON.stringify(payload)
         });
         const data = await response.json();
@@ -299,16 +298,20 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
     const query = searchQuery.toLowerCase();
     
     // Check search match
-    const nameMatch = lead.name?.toLowerCase().includes(query);
-    const emailMatch = lead.email?.toLowerCase().includes(query);
-    const phoneMatch = lead.phone?.toLowerCase().includes(query);
-    const bizMatch = lead.businessName?.toLowerCase().includes(query);
+    const nameMatch = (lead.name || '').toLowerCase().includes(query);
+    const emailMatch = (lead.email || '').toLowerCase().includes(query);
+    const phoneMatch = (lead.phone || '').toLowerCase().includes(query);
+    const companyMatch = (lead.company || '').toLowerCase().includes(query);
     
-    const matchesSearch = nameMatch || emailMatch || phoneMatch || bizMatch;
+    const matchesSearch = nameMatch || emailMatch || phoneMatch || companyMatch;
     const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
+
+  const canViewLeads = user?.role === 'admin' || user?.permissions?.canView !== false;
+  const canEditLeads = user?.role === 'admin' || user?.permissions?.canEdit;
+  const canDeleteLeads = user?.role === 'admin' || user?.permissions?.canDelete;
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in relative">
@@ -339,46 +342,33 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
         </div>
       </div>
 
-      {/* Filter and Search Section */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm">
-        <div className="flex-1 min-w-[280px] relative">
-          <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search leads by name, email, phone, or business..." 
-            className="w-full h-10 pl-9 pr-4 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all"
-          />
-          <div className="absolute left-3.5 top-3 text-slate-400">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+      {canViewLeads ? (
+        <>
+          {/* Filter and Search Section */}
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm">
+            <div className="flex-1 min-w-[280px] relative">
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search leads by name, email, phone, or company..." 
+                className="w-full h-10 pl-9 pr-4 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all"
+              />
+              <div className="absolute left-3.5 top-3 text-slate-400">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+            
           </div>
-        </div>
-        
-        <div className="flex items-center gap-2.5 shrink-0">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-0.5">Status Filter</span>
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 bg-white focus:border-sky-500 outline-none transition-all"
-          >
-            <option value="All">Show All Statuses</option>
-            <option value="New">New</option>
-            <option value="Active">Active</option>
-            <option value="Contacted">Contacted</option>
-            <option value="Follow-up Required">Follow-up Required</option>
-            <option value="No Answer">No Answer</option>
-          </select>
-        </div>
-      </div>
 
-      {/* Leads Table Container */}
-      <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto max-w-full">
-          <table className="w-full text-left border-collapse min-w-max">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none">
+          {/* Leads Table Container */}
+          <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto max-w-full">
+              <table className="w-full text-left border-collapse min-w-max">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none">
                 <th className="p-4 border-r border-slate-100/60 text-center w-16 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_rgba(241,245,249,1)]">S.No.</th>
                 {allColumns.map((col) => (
                   <th key={col.key} className="p-4 border-r border-slate-100/60 whitespace-nowrap min-w-[130px]">
@@ -413,24 +403,28 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
                     ))}
                     <td className="p-4 text-center">
                       <div className="inline-flex items-center gap-1.5">
-                        <button 
-                          onClick={() => handleOpenEditLead(lead)}
-                          className="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-600 hover:text-sky-600 hover:bg-sky-50 hover:border-sky-100 rounded text-[10px] font-bold transition-all cursor-pointer shadow-sm"
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteLead(lead.id, lead.name)}
-                          className="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-605 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 rounded text-[10px] font-bold transition-all cursor-pointer shadow-sm"
-                        >
-                          Delete
-                        </button>
-                        <button 
-                          onClick={() => onInitiateCall && onInitiateCall(lead)}
-                          className="px-2 py-1 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 rounded text-[10px] font-bold transition-all cursor-pointer shadow-sm flex items-center gap-1"
-                        >
-                          Call
-                        </button>
+                        {(canEditLeads || canDeleteLeads) ? (
+                          <>
+                            {canEditLeads && (
+                              <button 
+                                onClick={() => handleOpenEditLead(lead)}
+                                className="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-600 hover:text-sky-600 hover:bg-sky-50 hover:border-sky-100 rounded text-[10px] font-bold transition-all cursor-pointer shadow-sm"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {canDeleteLeads && (
+                              <button 
+                                onClick={() => handleDeleteLead(lead.id, lead.name)}
+                                className="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-605 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 rounded text-[10px] font-bold transition-all cursor-pointer shadow-sm"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-bold px-2 py-1">View Only</span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -443,9 +437,21 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
                 </tr>
               )}
             </tbody>
-          </table>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="bg-white border border-slate-200/80 p-12 rounded-xl shadow-sm flex flex-col items-center justify-center text-center">
+          <svg className="w-12 h-12 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <h3 className="font-bold text-slate-800 text-sm">Access Restricted</h3>
+          <p className="text-[10px] text-slate-400 font-semibold mt-1 max-w-sm">
+            You do not have permission to view the leads database. Contact your administrator to request access.
+          </p>
         </div>
-      </div>
+      )}
 
       {/* Dynamic Add / Edit Lead Modal */}
       {leadModal.isOpen && (
@@ -476,9 +482,7 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
             {/* Modal Navigation Tabs */}
             <div className="flex border-b border-slate-100 bg-slate-50/50 px-4">
               {[
-                { id: 'general', label: 'General Info' },
-                { id: 'contact', label: 'Contact & Social' },
-                { id: 'call', label: 'Call Activity' },
+                { id: 'general', label: 'Lead Details' },
                 { id: 'custom', label: `Custom Details (${customColumns.length})` }
               ].map((tab) => {
                 const isActive = activeFormTab === tab.id;
@@ -501,225 +505,28 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
 
             {/* Scrollable Form Content */}
             <div className="overflow-y-auto p-6 flex-1 max-h-[50vh]">
-              {/* Tab 1: General Info */}
+              {/* Tab 1: Lead Details */}
               {activeFormTab === 'general' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
-                  <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">
-                      Client Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={formValues.name || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Full Name of the contact"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Business Name</label>
-                    <input 
-                      type="text" 
-                      value={formValues.businessName || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, businessName: e.target.value }))}
-                      placeholder="e.g. Acme Corp"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Area Zone</label>
-                    <input 
-                      type="text" 
-                      value={formValues.areaZone || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, areaZone: e.target.value }))}
-                      placeholder="e.g. North Zone"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Address</label>
-                    <input 
-                      type="text" 
-                      value={formValues.address || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, address: e.target.value }))}
-                      placeholder="Full company or client address"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Lead Date</label>
-                    <input 
-                      type="date" 
-                      value={formValues.leadDate || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, leadDate: e.target.value }))}
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
+                  {BASE_COLUMNS.map((col) => (
+                    <div key={col.key} className={`flex flex-col gap-1.5 ${['add1', 'add2', 'add3', 'dearSirMadam'].includes(col.key) ? 'sm:col-span-2' : ''}`}>
+                      <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">
+                        {col.label} {col.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input 
+                        type={col.type === 'email' ? 'email' : 'text'} 
+                        required={col.required}
+                        value={formValues[col.key] || ''}
+                        onChange={(e) => setFormValues(prev => ({ ...prev, [col.key]: e.target.value }))}
+                        placeholder={`Enter ${col.label}...`}
+                        className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
+                      />
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Tab 2: Contact & Social */}
-              {activeFormTab === 'contact' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">
-                      Phone Number <span className="text-rose-500">*</span>
-                    </label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={formValues.phone || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="e.g. +91 99999-99999"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">
-                      Email Address <span className="text-rose-500">*</span>
-                    </label>
-                    <input 
-                      type="email" 
-                      required 
-                      value={formValues.email || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="e.g. client@company.com"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Google Map Link</label>
-                    <input 
-                      type="text" 
-                      value={formValues.googleMap || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, googleMap: e.target.value }))}
-                      placeholder="https://google.com/maps/place/..."
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Website Link</label>
-                    <input 
-                      type="text" 
-                      value={formValues.website || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, website: e.target.value }))}
-                      placeholder="https://example.com"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Instagram Link</label>
-                    <input 
-                      type="text" 
-                      value={formValues.instagram || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, instagram: e.target.value }))}
-                      placeholder="https://instagram.com/profile"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Facebook Link</label>
-                    <input 
-                      type="text" 
-                      value={formValues.facebook || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, facebook: e.target.value }))}
-                      placeholder="https://facebook.com/profile"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Twitter X Link</label>
-                    <input 
-                      type="text" 
-                      value={formValues.twitterX || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, twitterX: e.target.value }))}
-                      placeholder="https://x.com/profile"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">YouTube Link</label>
-                    <input 
-                      type="text" 
-                      value={formValues.youtube || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, youtube: e.target.value }))}
-                      placeholder="https://youtube.com/channel"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Tab 3: Call Details */}
-              {activeFormTab === 'call' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Status</label>
-                    <select
-                      value={formValues.status || 'New'}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, status: e.target.value }))}
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3 text-xs font-semibold text-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    >
-                      <option value="New">New</option>
-                      <option value="Active">Active</option>
-                      <option value="Contacted">Contacted</option>
-                      <option value="Follow-up Required">Follow-up Required</option>
-                      <option value="No Answer">No Answer</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Source Campaign</label>
-                    <input 
-                      type="text" 
-                      value={formValues.campaign || 'Direct Outreach'}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, campaign: e.target.value }))}
-                      placeholder="e.g. Inbound Campaign"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Start Call Date</label>
-                    <input 
-                      type="date" 
-                      value={formValues.startCallDate || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, startCallDate: e.target.value }))}
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Last Call Date</label>
-                    <input 
-                      type="date" 
-                      value={formValues.lastCallDate || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, lastCallDate: e.target.value }))}
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Remark</label>
-                    <input 
-                      type="text" 
-                      value={formValues.remark || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, remark: e.target.value }))}
-                      placeholder="Initial comments or calling observations"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Remark 2</label>
-                    <input 
-                      type="text" 
-                      value={formValues.remark2 || ''}
-                      onChange={(e) => setFormValues(prev => ({ ...prev, remark2: e.target.value }))}
-                      placeholder="Follow-up notes or secondary call details"
-                      className="w-full h-10 rounded-lg border border-slate-205 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Tab 4: Custom Details */}
+              {/* Tab 2: Custom Details */}
               {activeFormTab === 'custom' && (
                 <div className="flex flex-col gap-4 animate-fade-in">
                   {customColumns.length > 0 ? (
@@ -757,7 +564,7 @@ export default function LeadsManager({ leads, setLeads, onInitiateCall }) {
                       <span className="text-xl">⚙️</span>
                       <span className="text-xs font-bold text-slate-500">No Custom Columns Configured</span>
                       <p className="text-[10px] text-slate-400 font-semibold px-6 max-w-sm">
-                        You can add custom fields (like GSTIN, Industry, etc.) by clicking the "Add Column" button on the top right.
+                        You can add custom fields (like GSTIN, Industry, etc.) by clicking the &quot;Add Column&quot; button on the top right.
                       </p>
                     </div>
                   )}

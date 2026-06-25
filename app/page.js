@@ -5,18 +5,13 @@ import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const router = useRouter();
-  const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Form states
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginUserId, setLoginUserId] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
-  const [signupName, setSignupName] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
 
   // Check if user is already logged in on mount
   useEffect(() => {
@@ -38,7 +33,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+        body: JSON.stringify({ userId: loginUserId, password: loginPassword }),
       });
       const res = await response.json();
 
@@ -62,39 +57,6 @@ export default function Home() {
     }
   };
 
-  const handleSignupSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('http://localhost:5000/api/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: signupName, email: signupEmail, password: signupPassword }),
-      });
-      const res = await response.json();
-
-      if (response.ok && res.success) {
-        setSuccess('Account created successfully! You can now log in.');
-        setIsSignUp(false); // Flip to login card
-        // Clear signup inputs
-        setSignupName('');
-        setSignupEmail('');
-        setSignupPassword('');
-      } else {
-        setError(res.error || 'Failed to sign up.');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Could not connect to the authentication server.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <main className="flex flex-col flex-1 items-center justify-center min-h-screen bg-slate-50 px-4 py-12 font-sans text-slate-800">
@@ -137,66 +99,23 @@ export default function Home() {
           )}
         </div>
 
-        {/* Toggle Switch */}
-        <div className="bg-white border border-slate-200/80 rounded-xl p-1.5 flex gap-1 mb-8 shadow-sm">
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(false);
-              setError('');
-              setSuccess('');
-            }}
-            className={`px-5 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              !isSignUp 
-                ? 'bg-slate-900 text-white shadow-sm' 
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(true);
-              setError('');
-              setSuccess('');
-            }}
-            className={`px-5 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              isSignUp 
-                ? 'bg-slate-900 text-white shadow-sm' 
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
 
-        {/* Flip Card Wrapper */}
-        <div className="w-full h-[390px] perspective-1000">
-          <div 
-            className="relative w-full h-full preserve-3d transition-transform duration-500"
-            style={{
-              transform: isSignUp ? 'rotateY(180deg)' : 'rotateY(0deg)'
-            }}
-          >
-            
-            {/* Front Side: Log in */}
-            <div 
-              className="absolute inset-0 bg-white border border-slate-200/80 shadow-xl shadow-slate-100/60 rounded-2xl p-8 flex flex-col justify-between backface-hidden"
-            >
+        {/* Login Card Wrapper */}
+        <div className="w-full h-[390px]">
+          <div className="w-full h-full bg-white border border-slate-200/80 shadow-xl shadow-slate-100/60 rounded-2xl p-8 flex flex-col justify-between">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 mb-1">Welcome back</h2>
                 <p className="text-xs text-slate-500 mb-6 font-semibold">Enter your credentials to access your CRM</p>
                 
                 <form className="flex flex-col gap-4 w-full" onSubmit={handleLoginSubmit}>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Email Address</label>
+                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">User ID</label>
                     <input 
                       className="w-full h-11 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" 
-                      placeholder="name@company.com" 
-                      type="email" 
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="user123" 
+                      type="text" 
+                      value={loginUserId}
+                      onChange={(e) => setLoginUserId(e.target.value)}
                       required 
                       disabled={isLoading}
                     />
@@ -235,81 +154,6 @@ export default function Home() {
                   SECURE END-TO-END CONNECTION
                 </span>
               </div>
-            </div>
-
-            {/* Back Side: Sign up */}
-            <div 
-              className="absolute inset-0 bg-white border border-slate-200/80 shadow-xl shadow-slate-100/60 rounded-2xl p-8 flex flex-col justify-between backface-hidden"
-              style={{
-                transform: 'rotateY(180deg)'
-              }}
-            >
-              <div>
-                <h2 className="text-xl font-bold text-slate-900 mb-1">Create account</h2>
-                <p className="text-xs text-slate-500 mb-6 font-semibold">Join your corporate CRM system</p>
-                
-                <form className="flex flex-col gap-3.5 w-full" onSubmit={handleSignupSubmit}>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Full Name</label>
-                    <input 
-                      className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" 
-                      placeholder="Ayush Sharma" 
-                      type="text" 
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      required 
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Email Address</label>
-                    <input 
-                      className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" 
-                      placeholder="name@company.com" 
-                      type="email" 
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      required 
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Password</label>
-                    <input 
-                      className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" 
-                      placeholder="••••••••" 
-                      type="password" 
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      required 
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <button 
-                    type="submit"
-                    disabled={isLoading}
-                    className="mt-3 w-full h-11 rounded-lg bg-sky-500 hover:bg-sky-600 active:scale-[0.98] text-xs font-bold text-white shadow-md shadow-sky-500/15 cursor-pointer transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
-                  >
-                    {isLoading ? (
-                      <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                    ) : "Create Admin Account"}
-                  </button>
-                </form>
-              </div>
-              
-              <div className="text-center">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
-                  SECURE MONGODB INTEGRATION
-                </span>
-              </div>
-            </div>
-
           </div>
         </div>
 

@@ -1,16 +1,10 @@
+import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 
-const Navbar = ({ user }) => {
+const Navbar = ({ user, toggleSidebar }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [followUps, setFollowUps] = useState([]);
   const prevCountRef = useRef(0);
-
-  useEffect(() => {
-    fetchFollowUps();
-    // Poll every minute for new notifications
-    const interval = setInterval(fetchFollowUps, 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   const fetchFollowUps = async () => {
     try {
@@ -20,16 +14,16 @@ const Navbar = ({ user }) => {
         // Filter only pending follow-ups that are due in the next 24 hours or overdue
         const now = new Date();
         const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-        
+
         const upcoming = data.followUps.filter(f => {
           if (f.status !== 'Pending') return false;
           const scheduled = new Date(f.scheduledAt);
           return scheduled < tomorrow;
         });
-        
+
         const newFollowUps = upcoming.sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
         setFollowUps(newFollowUps);
-        
+
         // Auto-open and close after 5 seconds if we have new notifications
         if (newFollowUps.length > prevCountRef.current) {
           setIsNotificationsOpen(true);
@@ -43,6 +37,14 @@ const Navbar = ({ user }) => {
       console.error('Error fetching notifications:', error);
     }
   };
+
+  useEffect(() => {
+    fetchFollowUps();
+    // Poll every minute for new notifications
+    const interval = setInterval(fetchFollowUps, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
 
   const hasNotifications = followUps.length > 0;
 
@@ -61,7 +63,7 @@ const Navbar = ({ user }) => {
         </div>
 
         {/* Sidebar Collapse Toggle */}
-        <button className="text-slate-400 hover:text-white transition-colors cursor-pointer p-1">
+        <button onClick={toggleSidebar} className="text-slate-400 hover:text-white transition-colors cursor-pointer p-1">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -92,10 +94,10 @@ const Navbar = ({ user }) => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </button>
-          
+
           {/* Notifications button with red indicator dot */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className="hover:text-white transition-colors p-1 relative cursor-pointer"
             >
@@ -106,7 +108,7 @@ const Navbar = ({ user }) => {
                 <span className="w-1.5 h-1.5 bg-rose-500 rounded-full absolute top-1 right-1 animate-pulse" />
               )}
             </button>
-            
+
             {isNotificationsOpen && (
               <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 animate-fade-in text-left cursor-default">
                 <div className="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
@@ -118,7 +120,7 @@ const Navbar = ({ user }) => {
                       </span>
                     )}
                   </h3>
-                  <button 
+                  <button
                     onClick={() => setIsNotificationsOpen(false)}
                     className="text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
                   >
@@ -129,14 +131,14 @@ const Navbar = ({ user }) => {
                   {!hasNotifications ? (
                     <div className="p-6 text-center">
                       <span className="text-2xl block mb-2">🎉</span>
-                      <p className="text-xs font-semibold text-slate-500">You're all caught up!</p>
+                      <p className="text-xs font-semibold text-slate-500">You&apos;re all caught up!</p>
                       <p className="text-[10px] text-slate-400 mt-1">No upcoming follow-ups due.</p>
                     </div>
                   ) : (
                     followUps.map(f => {
                       const date = new Date(f.scheduledAt);
                       const isOverdue = date < new Date();
-                      
+
                       return (
                         <div key={f._id} className="p-4 hover:bg-slate-50 border-b border-slate-50 transition-colors relative">
                           <div className={`absolute left-0 top-0 bottom-0 w-1 ${isOverdue ? 'bg-rose-500' : 'bg-amber-400'}`}></div>
@@ -164,17 +166,12 @@ const Navbar = ({ user }) => {
             )}
           </div>
 
-          <button className="hover:text-white transition-colors p-1 cursor-pointer">
+          <a href="https://mail.google.com/" target='_blank' className="hover:text-white transition-colors p-1 cursor-pointer">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-          </button>
+          </a>
 
-          <button className="hover:text-white transition-colors p-1 cursor-pointer hidden sm:block">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2m0 8v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2" />
-            </svg>
-          </button>
         </div>
 
         {/* User profile details */}

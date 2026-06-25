@@ -12,6 +12,64 @@ export default function UserManagement({ user: currentUser }) {
 
   // Track inline updating states per user ID: { [userId]: 'idle' | 'updating' | 'success' | 'error' }
   const [updateStates, setUpdateStates] = useState({});
+  const [permissionUpdateStates, setPermissionUpdateStates] = useState({});
+
+  // Password reset states
+  const [passwordInputs, setPasswordInputs] = useState({});
+  const [passwordUpdateStates, setPasswordUpdateStates] = useState({});
+
+  // Create User states
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmployeeId, setNewUserEmployeeId] = useState('');
+  const [newUserId, setNewUserId] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState('employee');
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setIsCreating(true);
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const response = await fetch('http://localhost:5000/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id,
+        },
+        body: JSON.stringify({
+          name: newUserName,
+          employeeId: newUserEmployeeId,
+          userId: newUserId,
+          password: newUserPassword,
+          role: newUserRole
+        }),
+      });
+      const res = await response.json();
+      if (response.ok && res.success) {
+        setSuccessMsg('User created successfully!');
+        setShowCreateForm(false);
+        // Clear form
+        setNewUserName('');
+        setNewUserEmployeeId('');
+        setNewUserId('');
+        setNewUserPassword('');
+        setNewUserRole('employee');
+        // Refresh users
+        fetchUsers();
+      } else {
+        setError(res.error || 'Failed to create user.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Could not connect to the backend server to create user.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -89,11 +147,93 @@ export default function UserManagement({ user: currentUser }) {
     }
   };
 
+  const handlePermissionChange = async (userId, newPermissions) => {
+    if (userId === currentUser.id) {
+      setError("You cannot change your own permissions to prevent administrator lockout.");
+      return;
+    }
+
+    setPermissionUpdateStates(prev => ({ ...prev, [userId]: 'updating' }));
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/users/${userId}/permissions`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id,
+        },
+        body: JSON.stringify({ permissions: newPermissions }),
+      });
+
+      const res = await response.json();
+      if (response.ok && res.success) {
+        setUsers(prev =>
+          prev.map(u => (u._id === userId ? { ...u, permissions: newPermissions } : u))
+        );
+        setPermissionUpdateStates(prev => ({ ...prev, [userId]: 'success' }));
+        setSuccessMsg(`Successfully updated permissions for ${res.user.name}.`);
+        
+        setTimeout(() => {
+          setPermissionUpdateStates(prev => ({ ...prev, [userId]: 'idle' }));
+        }, 3000);
+      } else {
+        setPermissionUpdateStates(prev => ({ ...prev, [userId]: 'error' }));
+        setError(res.error || 'Failed to update user permissions.');
+      }
+    } catch (err) {
+      console.error(err);
+      setPermissionUpdateStates(prev => ({ ...prev, [userId]: 'error' }));
+      setError('Could not connect to the backend server to update permissions.');
+    }
+  };
+
+  const handlePasswordChange = async (userId) => {
+    const newPassword = passwordInputs[userId];
+    if (!newPassword || newPassword.length < 4) {
+      setError('Password must be at least 4 characters long.');
+      return;
+    }
+    
+    setPasswordUpdateStates((prev) => ({ ...prev, [userId]: 'updating' }));
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/users/${userId}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id,
+        },
+        body: JSON.stringify({ newPassword }),
+      });
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setPasswordUpdateStates((prev) => ({ ...prev, [userId]: 'success' }));
+        setSuccessMsg(data.message || 'Password updated successfully.');
+        // clear input
+        setPasswordInputs((prev) => ({ ...prev, [userId]: '' }));
+        setTimeout(() => setPasswordUpdateStates((prev) => ({ ...prev, [userId]: 'idle' })), 2000);
+      } else {
+        setPasswordUpdateStates((prev) => ({ ...prev, [userId]: 'error' }));
+        setError(data.error || 'Failed to update password.');
+      }
+    } catch (err) {
+      console.error(err);
+      setPasswordUpdateStates((prev) => ({ ...prev, [userId]: 'error' }));
+      setError('Could not connect to the backend server to update password.');
+    }
+  };
+
   // Filter users based on search query and role filter
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase());
+      (u.userId && u.userId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (u.employeeId && u.employeeId.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
 
@@ -128,15 +268,28 @@ export default function UserManagement({ user: currentUser }) {
             Admin-only console to view registration queue and assign corporate roles
           </p>
         </div>
-        <button 
-          onClick={fetchUsers}
-          className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-800 font-bold text-xs uppercase rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
-          </svg>
-          Refresh Users
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={fetchUsers}
+            className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-800 font-bold text-xs uppercase rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+            </svg>
+            Refresh Users
+          </button>
+          {currentUser.role === 'admin' && (
+            <button 
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs uppercase rounded-lg shadow-sm shadow-sky-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Create User
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Dynamic Alerts */}
@@ -158,6 +311,46 @@ export default function UserManagement({ user: currentUser }) {
           </div>
         )}
       </div>
+
+      {/* Create User Form (Admin Only) */}
+      {showCreateForm && currentUser.role === 'admin' && (
+        <div className="bg-white border border-slate-200/80 p-5 rounded-xl shadow-sm mb-2 animate-fade-in">
+          <h3 className="text-sm font-bold text-slate-900 mb-4">Create New User</h3>
+          <form className="flex flex-col gap-4" onSubmit={handleCreateUser}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Full Name</label>
+                <input required type="text" value={newUserName} onChange={e => setNewUserName(e.target.value)} className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" placeholder="John Doe" disabled={isCreating} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Employee ID</label>
+                <input required type="text" value={newUserEmployeeId} onChange={e => setNewUserEmployeeId(e.target.value)} className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" placeholder="EMP-001" disabled={isCreating} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">User ID (Login ID)</label>
+                <input required type="text" value={newUserId} onChange={e => setNewUserId(e.target.value)} className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" placeholder="user_johnd" disabled={isCreating} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Password</label>
+                <input required type="password" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" placeholder="••••••••" disabled={isCreating} />
+              </div>
+              <div className="flex flex-col gap-1.5 sm:col-span-2 md:col-span-1">
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Role</label>
+                <select value={newUserRole} onChange={e => setNewUserRole(e.target.value)} className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all cursor-pointer" disabled={isCreating}>
+                  <option value="employee">Employee (Default)</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5 sm:col-span-2 md:col-span-3 justify-end items-end">
+                <button type="submit" disabled={isCreating} className="w-full sm:w-auto px-6 h-10 rounded-lg bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-xs font-bold text-white shadow-md shadow-emerald-500/15 cursor-pointer transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center">
+                  {isCreating ? 'Creating...' : 'Create Admin/User Account'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="bg-white border border-slate-200/80 p-5 rounded-xl shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -190,7 +383,6 @@ export default function UserManagement({ user: currentUser }) {
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="employee">Employee</option>
-            <option value="user">User (Default)</option>
           </select>
         </div>
 
@@ -228,7 +420,7 @@ export default function UserManagement({ user: currentUser }) {
                   <th className="p-4 border-r border-slate-100/60">User Identity</th>
                   <th className="p-4 border-r border-slate-100/60">Registration Date</th>
                   <th className="p-4 border-r border-slate-100/60 text-center">Auth Status Badge</th>
-                  <th className="p-4 text-center">Modify Authorization Role</th>
+                  <th className="p-4 text-center">Actions, Role & Permissions</th>
                 </tr>
               </thead>
               <tbody>
@@ -258,7 +450,7 @@ export default function UserManagement({ user: currentUser }) {
                                 </span>
                               )}
                             </span>
-                            <span className="text-[10px] text-slate-400">{userObj.email}</span>
+                            <span className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {userObj.userId || 'N/A'} • EMP: {userObj.employeeId || 'N/A'}</span>
                           </div>
                         </div>
                       </td>
@@ -286,43 +478,132 @@ export default function UserManagement({ user: currentUser }) {
                         </span>
                       </td>
 
-                      {/* Column 4: Dropdown selector */}
-                      <td className="p-4">
-                        <div className="flex items-center justify-center gap-3">
-                          <select
-                            value={currentRole}
-                            disabled={isSelf || rowState === 'updating'}
-                            onChange={(e) => handleRoleChange(userObj._id, e.target.value)}
-                            className={`h-9 px-2.5 border rounded-lg text-xs font-semibold outline-none transition-all min-w-[130px] ${
-                              isSelf 
-                                ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed' 
-                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 focus:border-sky-500 cursor-pointer'
-                            }`}
-                          >
-                            <option value="user">User (Default)</option>
-                            <option value="employee">Employee</option>
-                            <option value="manager">Manager</option>
-                            <option value="admin">Admin</option>
-                          </select>
+                      {/* Column 4: Dropdown selector and Password Reset */}
+                      <td className="p-4 align-top">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold text-slate-400 w-10">Role:</span>
+                            <select
+                              value={currentRole}
+                              disabled={isSelf || rowState === 'updating'}
+                              onChange={(e) => handleRoleChange(userObj._id, e.target.value)}
+                              className={`h-8 px-2 border rounded text-xs font-semibold outline-none transition-all w-[130px] ${
+                                isSelf 
+                                  ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed' 
+                                  : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 focus:border-sky-500 cursor-pointer'
+                              }`}
+                            >
+                              <option value="employee">Employee</option>
+                              <option value="manager">Manager</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                            {/* Saving Status Spinner/Checkmark for Role */}
+                            <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                              {rowState === 'updating' && (
+                                <svg className="animate-spin h-3.5 w-3.5 text-sky-500" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                              )}
+                              {rowState === 'success' && (
+                                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                              {rowState === 'error' && (
+                                <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
 
-                          {/* Saving Status Spinner/Checkmark */}
-                          <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                            {rowState === 'updating' && (
-                              <svg className="animate-spin h-3.5 w-3.5 text-sky-500" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                              </svg>
-                            )}
-                            {rowState === 'success' && (
-                              <svg className="w-4.5 h-4.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                            {rowState === 'error' && (
-                              <svg className="w-4.5 h-4.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            )}
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold text-slate-400 w-10">Pass:</span>
+                            <div className="flex gap-1.5 w-[130px]">
+                              <input 
+                                type="password"
+                                placeholder="New Pass"
+                                value={passwordInputs[userObj._id] || ''}
+                                onChange={e => setPasswordInputs({...passwordInputs, [userObj._id]: e.target.value})}
+                                className="h-8 w-full px-2 border border-slate-200 rounded text-xs outline-none focus:border-sky-500 transition-all bg-white"
+                              />
+                              <button 
+                                onClick={() => handlePasswordChange(userObj._id)}
+                                disabled={passwordUpdateStates[userObj._id] === 'updating' || !(passwordInputs[userObj._id]?.length > 0)}
+                                className="px-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                              >
+                                {passwordUpdateStates[userObj._id] === 'updating' ? '...' : 'Save'}
+                              </button>
+                            </div>
+                            {/* Saving Status Spinner/Checkmark for Password */}
+                            <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                              {passwordUpdateStates[userObj._id] === 'success' && (
+                                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                              {passwordUpdateStates[userObj._id] === 'error' && (
+                                <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 mt-1 pt-3 border-t border-slate-100">
+                            <span className="text-[10px] font-bold text-slate-400 w-10">Perms:</span>
+                            <div className="flex items-center gap-2 w-[130px] flex-wrap">
+                              <label className="flex items-center gap-1 cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={userObj.permissions?.canView !== false} 
+                                  disabled={isSelf || permissionUpdateStates[userObj._id] === 'updating'}
+                                  onChange={(e) => handlePermissionChange(userObj._id, { ...userObj.permissions, canView: e.target.checked })}
+                                  className="w-3 h-3 accent-sky-500 rounded-sm cursor-pointer"
+                                />
+                                <span className="text-[10px] font-bold text-slate-600">View</span>
+                              </label>
+                              <label className="flex items-center gap-1 cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={userObj.permissions?.canEdit || false} 
+                                  disabled={isSelf || permissionUpdateStates[userObj._id] === 'updating'}
+                                  onChange={(e) => handlePermissionChange(userObj._id, { ...userObj.permissions, canEdit: e.target.checked })}
+                                  className="w-3 h-3 accent-sky-500 rounded-sm cursor-pointer"
+                                />
+                                <span className="text-[10px] font-bold text-slate-600">Edit</span>
+                              </label>
+                              <label className="flex items-center gap-1 cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={userObj.permissions?.canDelete || false} 
+                                  disabled={isSelf || permissionUpdateStates[userObj._id] === 'updating'}
+                                  onChange={(e) => handlePermissionChange(userObj._id, { ...userObj.permissions, canDelete: e.target.checked })}
+                                  className="w-3 h-3 accent-sky-500 rounded-sm cursor-pointer"
+                                />
+                                <span className="text-[10px] font-bold text-slate-600">Delete</span>
+                              </label>
+                            </div>
+                            {/* Saving Status Spinner/Checkmark for Permissions */}
+                            <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                              {permissionUpdateStates[userObj._id] === 'updating' && (
+                                <svg className="animate-spin h-3.5 w-3.5 text-sky-500" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                              )}
+                              {permissionUpdateStates[userObj._id] === 'success' && (
+                                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                              {permissionUpdateStates[userObj._id] === 'error' && (
+                                <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>

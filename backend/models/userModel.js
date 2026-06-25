@@ -6,12 +6,16 @@ const userSchema = new mongoose.Schema({
     required: true, 
     trim: true 
   },
-  email: { 
+  userId: { 
     type: String, 
     required: true, 
     unique: true, 
-    lowercase: true, 
     trim: true 
+  },
+  employeeId: {
+    type: String,
+    required: true,
+    trim: true
   },
   password: { 
     type: String, 
@@ -19,8 +23,13 @@ const userSchema = new mongoose.Schema({
   },
   role: { 
     type: String, 
-    enum: ['user','admin','manager','employee'], 
-    default: 'user' 
+    enum: ['employee','manager','admin'], 
+    default: 'employee' 
+  },
+  permissions: {
+    canView: { type: Boolean, default: true },
+    canEdit: { type: Boolean, default: false },
+    canDelete: { type: Boolean, default: false }
   },
   createdAt: { 
     type: Date, 

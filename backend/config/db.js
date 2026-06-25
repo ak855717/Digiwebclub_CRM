@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const MONGODB_URI = 'mongodb://localhost:27017/CRM_calling';
+const MONGODB_URI = 'mongodb://localhost:27017/Digiwebclub_calling';
 
 async function connectDb() {
   try {
@@ -10,18 +10,19 @@ async function connectDb() {
 
     // Seed default admin account using direct bcrypt hashing
     const User = require('../models/userModel');
-    const admin = await User.findOne({ email: 'admin@example.com' });
+    const admin = await User.findOne({ userId: 'admin' });
     if (!admin) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('admin', salt);
       
       await User.create({
         name: 'Administrator',
-        email: 'admin@example.com',
+        userId: 'admin',
+        employeeId: 'EMP-ADMIN',
         password: hashedPassword,
         role: 'admin',
       });
-      console.log('CRM_calling database seeded with default admin account: admin@example.com / admin (bcrypt)');
+      console.log('CRM_calling database seeded with default admin account: userId: admin / admin (bcrypt)');
     }
   } catch (err) {
     console.error('Failed to connect to MongoDB in Mongoose config:', err);
@@ -33,4 +34,4 @@ module.exports = {
   connectDb,
 };
 
-// acc: admin@example.com, pass: admin
+// acc: admin, pass: admin
