@@ -8,7 +8,7 @@ const Navbar = ({ user, toggleSidebar }) => {
 
   const fetchFollowUps = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/followups');
+      const response = await fetch('/api/followups');
       const data = await response.json();
       if (data.success) {
         // Filter only pending follow-ups that are due in the next 24 hours or overdue

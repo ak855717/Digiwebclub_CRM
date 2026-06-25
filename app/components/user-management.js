@@ -34,7 +34,7 @@ export default function UserManagement({ user: currentUser }) {
     setSuccessMsg('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/create-user', {
+      const response = await fetch('/api/create-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ export default function UserManagement({ user: currentUser }) {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:5000/api/users', {
+      const response = await fetch('/api/users', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ export default function UserManagement({ user: currentUser }) {
     setSuccessMsg('');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${userId}/role`, {
+      const response = await fetch(`/api/users/${userId}/role`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ export default function UserManagement({ user: currentUser }) {
     setSuccessMsg('');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${userId}/permissions`, {
+      const response = await fetch(`/api/users/${userId}/permissions`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -201,7 +201,7 @@ export default function UserManagement({ user: currentUser }) {
     setSuccessMsg('');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${userId}/password`, {
+      const response = await fetch(`/api/users/${userId}/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -195,7 +195,7 @@ export default function LeadsManager({ leads, setLeads, user }) {
   const handleDeleteLead = async (id, name) => {
     if (window.confirm(`Are you sure you want to delete lead: "${name}"?`)) {
       try {
-        const response = await fetch(`http://localhost:5000/api/leads/${id}`, { 
+        const response = await fetch(`/api/leads/${id}`, { 
           method: 'DELETE',
           headers: {
             'x-user-id': user?.id || user?._id || ''
@@ -226,7 +226,7 @@ export default function LeadsManager({ leads, setLeads, user }) {
 
     try {
       if (leadModal.type === 'add') {
-        const response = await fetch('http://localhost:5000/api/leads', {
+        const response = await fetch('/api/leads', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -240,7 +240,7 @@ export default function LeadsManager({ leads, setLeads, user }) {
           return;
         }
       } else {
-        const response = await fetch(`http://localhost:5000/api/leads/${leadModal.leadId}`, {
+        const response = await fetch(`/api/leads/${leadModal.leadId}`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',

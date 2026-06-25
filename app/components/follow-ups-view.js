@@ -17,7 +17,7 @@ export default function FollowUpsView() {
 
   const fetchFollowUps = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/followups');
+      const response = await fetch('/api/followups');
       const data = await response.json();
       if (data.success) {
         setFollowUps(data.followUps);
@@ -35,7 +35,7 @@ export default function FollowUpsView() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/followups', {
+      const response = await fetch('/api/followups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -56,7 +56,7 @@ export default function FollowUpsView() {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this follow-up?')) {
       try {
-        const response = await fetch(`http://localhost:5000/api/followups/${id}`, {
+        const response = await fetch(`/api/followups/${id}`, {
           method: 'DELETE'
         });
         const data = await response.json();
@@ -72,7 +72,7 @@ export default function FollowUpsView() {
   const handleStatusToggle = async (followUp) => {
     const newStatus = followUp.status === 'Pending' ? 'Completed' : 'Pending';
     try {
-      const response = await fetch(`http://localhost:5000/api/followups/${followUp._id}`, {
+      const response = await fetch(`/api/followups/${followUp._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...followUp, status: newStatus })

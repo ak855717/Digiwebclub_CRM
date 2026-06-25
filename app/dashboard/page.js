@@ -21,7 +21,7 @@ export default function Dashboard() {
 
   const fetchLeads = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/leads');
+      const response = await fetch('/api/leads');
       const data = await response.json();
       if (data.success) {
         const formattedLeads = data.leads.map(l => ({ ...l, id: l._id }));
@@ -34,7 +34,7 @@ export default function Dashboard() {
 
   const fetchFollowUps = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/followups');
+      const response = await fetch('/api/followups');
       const data = await response.json();
       if (data.success) {
         const formattedTodos = data.followUps.map(f => ({
@@ -101,7 +101,7 @@ export default function Dashboard() {
     if (!newTodoText.trim()) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/followups', {
+      const response = await fetch('/api/followups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,7 +134,7 @@ export default function Dashboard() {
     setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
     
     try {
-      await fetch(`http://localhost:5000/api/followups/${id}`, {
+      await fetch(`/api/followups/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -151,7 +151,7 @@ export default function Dashboard() {
     setTodos((prev) => prev.filter((t) => t.id !== id));
     
     try {
-      await fetch(`http://localhost:5000/api/followups/${id}`, {
+      await fetch(`/api/followups/${id}`, {
         method: 'DELETE'
       });
     } catch (err) {
