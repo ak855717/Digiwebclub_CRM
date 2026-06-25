@@ -18,7 +18,11 @@ app.use('/api', followUpRoutes);
 
 // Establish database connection and start Express listening
 connectDb().then(() => {
-  app.listen(PORT, () => {
-    console.log(`MVC Backend server is running on http://localhost:${PORT}`);
-  });
-});
+  if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+      console.log(`MVC Backend server is running on http://localhost:${PORT}`);
+    });
+  }
+}).catch(console.error);
+
+module.exports = app;
