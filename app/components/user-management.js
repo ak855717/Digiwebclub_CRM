@@ -5,7 +5,7 @@ export default function UserManagement({ user: currentUser }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  
+
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -26,6 +26,8 @@ export default function UserManagement({ user: currentUser }) {
   const [newUserId, setNewUserId] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState('employee');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPhoneNumber, setNewUserPhoneNumber] = useState('');
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
@@ -45,7 +47,9 @@ export default function UserManagement({ user: currentUser }) {
           employeeId: newUserEmployeeId,
           userId: newUserId,
           password: newUserPassword,
-          role: newUserRole
+          role: newUserRole,
+          email: newUserEmail,
+          phonenumber: newUserPhoneNumber
         }),
       });
       const res = await response.json();
@@ -54,10 +58,12 @@ export default function UserManagement({ user: currentUser }) {
         setShowCreateForm(false);
         // Clear form
         setNewUserName('');
-        setNewUserEmployeeId('');
+        setNewUserEmployeeId(''); 
         setNewUserId('');
         setNewUserPassword('');
         setNewUserRole('employee');
+        setNewUserEmail('');
+        setNewUserPhoneNumber('');
         // Refresh users
         fetchUsers();
       } else {
@@ -331,6 +337,14 @@ export default function UserManagement({ user: currentUser }) {
                 <input required type="text" value={newUserId} onChange={e => setNewUserId(e.target.value)} className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" placeholder="user_johnd" disabled={isCreating} />
               </div>
               <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Email</label>
+                <input required type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" placeholder="jane@example.com" disabled={isCreating} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Phone Number</label>
+                <input required type="tel" value={newUserPhoneNumber} onChange={e => setNewUserPhoneNumber(e.target.value)} className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" placeholder="+1234567890" disabled={isCreating} />
+              </div>
+              <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Password</label>
                 <input required type="password" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10 outline-none transition-all" placeholder="••••••••" disabled={isCreating} />
               </div>
@@ -450,7 +464,10 @@ export default function UserManagement({ user: currentUser }) {
                                 </span>
                               )}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {userObj.userId || 'N/A'} • EMP: {userObj.employeeId || 'N/A'}</span>
+                            <div className="flex flex-col gap-0.5 mt-0.5">
+                              <span className="text-[10px] text-slate-400 font-mono">ID: {userObj.userId || 'N/A'} • EMP: {userObj.employeeId || 'N/A'}</span>
+                              <span className="text-[10px] text-slate-400 font-mono">✉ {userObj.email || 'N/A'} • 📞 {userObj.phonenumber || 'N/A'}</span>
+                            </div>
                           </div>
                         </div>
                       </td>
