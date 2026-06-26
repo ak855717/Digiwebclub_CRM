@@ -37,10 +37,6 @@ export default function SettingsView({ user }) {
               <input className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-500 outline-none uppercase" defaultValue={user?.role || 'N/A'} disabled />
             </div>
           </div>
-          <div className="flex flex-col gap-1.5 mt-2">
-            <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Active Database</label>
-            <input className="w-full max-w-md h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 text-xs font-semibold text-slate-500 font-mono" defaultValue="CRM_calling" disabled />
-          </div>
         </form>
       </div>
     </div>
