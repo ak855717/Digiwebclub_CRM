@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 // Base Standard Columns requested by user
 const BASE_COLUMNS = [
@@ -394,7 +395,7 @@ export default function LeadsManager({ leads, setLeads, user }) {
   const canDeleteLeads = user?.role === 'admin' || user?.permissions?.canDelete;
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in relative">
+    <div className="flex flex-col gap-6 animate-fade-in relative flex-1">
       {/* Header and Control Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200/80 p-5 rounded-xl shadow-sm">
         <div>
@@ -444,12 +445,12 @@ export default function LeadsManager({ leads, setLeads, user }) {
           </div>
 
           {/* Leads Table Container */}
-          <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto max-w-full">
+          <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden flex flex-col flex-1">
+            <div className="overflow-auto max-h-[calc(100vh-340px)] min-h-[350px] max-w-full flex-1">
               <table className="w-full text-left border-collapse min-w-max">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none">
-                <th className="p-4 border-r border-slate-100/60 text-center w-16 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_rgba(241,245,249,1)]">S.No.</th>
+                  <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none sticky top-0 z-20 shadow-xs">
+                <th className="p-4 border-r border-slate-100/60 text-center w-16 sticky left-0 top-0 bg-slate-50 z-30 shadow-[1px_0_0_0_rgba(241,245,249,1)]">S.No.</th>
                 {allColumns.map((col) => (
                   <th key={col.key} className="p-4 border-r border-slate-100/60 whitespace-nowrap min-w-[130px]">
                     <div className="flex items-center justify-between group">
@@ -570,7 +571,7 @@ export default function LeadsManager({ leads, setLeads, user }) {
       )}
 
       {/* Dynamic Add / Edit Lead Modal */}
-      {leadModal.isOpen && (
+      {isClient && leadModal.isOpen && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
           <form 
             onSubmit={handleLeadFormSubmit} 
@@ -705,11 +706,12 @@ export default function LeadsManager({ leads, setLeads, user }) {
               </button>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Add Custom Column Modal */}
-      {columnModal.isOpen && (
+      {isClient && columnModal.isOpen && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
           <form 
             onSubmit={handleAddColumnSubmit} 
@@ -774,11 +776,12 @@ export default function LeadsManager({ leads, setLeads, user }) {
               </button>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Customer Remarks & Notes Modal */}
-      {remarksModal.isOpen && remarksModal.lead && (
+      {isClient && remarksModal.isOpen && remarksModal.lead && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200/80 w-full max-w-xl overflow-hidden animate-slide-up flex flex-col max-h-[85vh]">
             {/* Modal Header */}
@@ -887,7 +890,8 @@ export default function LeadsManager({ leads, setLeads, user }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

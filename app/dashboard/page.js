@@ -232,7 +232,7 @@ export default function Dashboard() {
         />
 
         {/* Scrollable Main Console */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 max-h-[calc(100vh-64px)]">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 max-h-[calc(100vh-64px)] flex flex-col">
           {renderContent()}
         </main>
       </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function FollowUpsView() {
+  const [isClient, setIsClient] = useState(false);
   const [followUps, setFollowUps] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -12,6 +14,7 @@ export default function FollowUpsView() {
   });
 
   useEffect(() => {
+    setIsClient(true);
     fetchFollowUps();
   }, []);
 
@@ -159,19 +162,19 @@ export default function FollowUpsView() {
         )}
       </div>
 
-      {isModalOpen && (
+      {isClient && isModalOpen && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200/80 w-full max-w-md overflow-hidden animate-slide-up">
-            <div className="bg-slate-50 border-b border-slate-100 px-5 py-4 flex justify-between items-center">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200/80 w-full max-w-md overflow-hidden animate-slide-up max-h-[90vh] flex flex-col">
+            <div className="bg-slate-50 border-b border-slate-100 px-5 py-4 flex justify-between items-center shrink-0">
               <h3 className="font-bold text-slate-800 text-sm">Schedule Follow-up</h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold"
+                className="text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
-            <form onSubmit={handleAddSubmit} className="p-5 flex flex-col gap-4">
+            <form onSubmit={handleAddSubmit} className="p-5 flex flex-col gap-4 overflow-y-auto max-h-[calc(90vh-60px)]">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase pl-0.5">Lead Name *</label>
                 <input 
@@ -227,7 +230,8 @@ export default function FollowUpsView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
