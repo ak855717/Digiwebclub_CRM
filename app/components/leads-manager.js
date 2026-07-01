@@ -829,7 +829,7 @@ export default function LeadsManager({ leads, setLeads, user }) {
                             second: '2-digit'
                           }) : 'Just now'}
                         </span>
-                        {(user?.role === 'admin' || user?.name === remark.addedBy) && remark._id && (
+                        {user?.role === 'admin' && remark._id && (
                           <button
                             onClick={() => handleDeleteRemark(remark._id)}
                             className="text-slate-300 hover:text-rose-500 text-xs ml-1 transition-colors cursor-pointer"
