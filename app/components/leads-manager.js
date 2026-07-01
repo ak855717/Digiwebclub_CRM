@@ -7,7 +7,7 @@ const BASE_COLUMNS = [
   { key: 'applicationNo', label: 'Application No.', type: 'text' },
   { key: 'sector', label: 'Sector', type: 'text' },
   { key: 'title', label: 'Title', type: 'text' },
-  { key: 'name', label: 'Name', type: 'text', required: true },
+  { key: 'name', label: 'Name', type: 'text' },
   { key: 'designation', label: 'Designation', type: 'text' },
   { key: 'company', label: 'Company', type: 'text' },
   { key: 'unitName', label: 'Unit Name', type: 'text' },
@@ -17,9 +17,9 @@ const BASE_COLUMNS = [
   { key: 'cityPinCode', label: 'City & Pin Code', type: 'text' },
   { key: 'state', label: 'State', type: 'text' },
   { key: 'dearSirMadam', label: 'Dear Sir, Madam', type: 'text' },
-  { key: 'phone', label: 'Phone', type: 'text', required: true },
+  { key: 'phone', label: 'Phone', type: 'text' },
   { key: 'mobile', label: 'Mobile', type: 'text' },
-  { key: 'email', label: 'E-mail', type: 'email', required: true },
+  { key: 'email', label: 'E-mail', type: 'text' },
   { key: 'trophy1', label: 'Trophy1', type: 'text' },
   { key: 'trophy2', label: 'Trophy2', type: 'text' },
   { key: 'award', label: 'Award', type: 'text' }
@@ -238,10 +238,6 @@ export default function LeadsManager({ leads, setLeads, user }) {
   // Form Submission
   const handleLeadFormSubmit = async (e) => {
     e.preventDefault();
-    if (!formValues.name || !formValues.email || !formValues.phone) {
-      alert('Name, Email, and Phone are required fields.');
-      return;
-    }
 
     const payload = { ...formValues };
     delete payload.remarks;

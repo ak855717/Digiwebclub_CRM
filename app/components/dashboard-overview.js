@@ -19,7 +19,7 @@ export default function DashboardOverview({
     const d = new Date(date);
     const day = d.getDay() || 7; // Get current day number, converting Sun. to 7
     if (day !== 1) d.setHours(-24 * (day - 1)); // set to Monday
-    d.setHours(0,0,0,0);
+    d.setHours(0, 0, 0, 0);
     return d;
   };
 
@@ -30,15 +30,15 @@ export default function DashboardOverview({
   const totalLeads = leads.length;
   const contactedLeads = leads.filter(l => l.status === 'Contacted' || l.status === 'Active');
   const campaignProgress = totalLeads ? Math.round((contactedLeads.length / totalLeads) * 100) : 0;
-  
+
   // Calculate Daily Activity (Leads created today + Todos completed today)
   const leadsCreatedToday = leads.filter(l => new Date(l.createdAt || l.updatedAt || new Date()) >= today).length;
   const todosCompletedToday = todos.filter(t => t.completed).length; // Approximated since we don't have exact completion timestamp in frontend yet
   const dailyActivity = leadsCreatedToday + todosCompletedToday;
-  
+
   // Total Deposits mock based on leads data
   const totalDeposits = leads.reduce((sum, l) => sum + (l.deposit || 0), 0) + (contactedLeads.length * 450) + 15000;
-  
+
   // Daily Outbound Cost mock based on leads
   const dailyCost = 500 + (contactedLeads.length * 15);
 
@@ -48,7 +48,7 @@ export default function DashboardOverview({
     acc[geo] = (acc[geo] || 0) + 1;
     return acc;
   }, {});
-  
+
   const geoEntries = Object.entries(geoCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
   const geoTotal = geoEntries.reduce((sum, g) => sum + g[1], 0) || 1;
   const flags = { 'United States': '🇺🇸', 'United Kingdom': '🇬🇧', 'Canada': '🇨🇦', 'Australia': '🇦🇺', 'India': '🇮🇳' };
@@ -60,7 +60,7 @@ export default function DashboardOverview({
     pct: Math.round((count / geoTotal) * 100),
     color: colors[idx % colors.length]
   }));
-  
+
   if (activeGeographies.length === 0) {
     activeGeographies = [
       { country: 'United States', flag: '🇺🇸', calls: 1420, pct: 60, color: 'bg-sky-500' },
@@ -70,7 +70,7 @@ export default function DashboardOverview({
     ];
   }
 
-  // Pending Callbacks
+  // Pending FollowUp
   const pendingTodosCount = todos.filter(t => !t.completed).length;
   const totalTodosCount = todos.length || 1;
   const todoCompletionPct = Math.round(((totalTodosCount - pendingTodosCount) / totalTodosCount) * 100);
@@ -82,12 +82,12 @@ export default function DashboardOverview({
   // Dynamic Chart Data Generation
   const getDynamicChartData = (timeframe, dataItems) => {
     const now = new Date();
-    
+
     if (timeframe === 'Weekly') {
       const startOfWeek = getStartOfWeek(now);
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const counts = new Array(7).fill(0);
-      
+
       dataItems.forEach(item => {
         const d = new Date(item.createdAt || item.scheduledAt || now);
         if (d >= startOfWeek) {
@@ -96,19 +96,19 @@ export default function DashboardOverview({
           if (dayIndex >= 0 && dayIndex < 7) counts[dayIndex]++;
         }
       });
-      
+
       const maxCount = Math.max(...counts, 1);
       return days.map((day, i) => ({
         label: day,
         count: counts[i],
         pct: `${Math.round((counts[i] / maxCount) * 100)}%`
       }));
-      
+
     } else if (timeframe === 'Monthly') {
       const startOfMonth = getStartOfMonth(now);
       const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
       const counts = new Array(4).fill(0);
-      
+
       dataItems.forEach(item => {
         const d = new Date(item.createdAt || item.scheduledAt || now);
         if (d >= startOfMonth) {
@@ -118,20 +118,20 @@ export default function DashboardOverview({
           counts[weekIndex]++;
         }
       });
-      
+
       const maxCount = Math.max(...counts, 1);
       return weeks.map((week, i) => ({
         label: week,
         count: counts[i],
         pct: `${Math.round((counts[i] / maxCount) * 100)}%`
       }));
-      
+
     } else {
       // Yearly
       const startOfYear = getStartOfYear(now);
       const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
       const counts = new Array(4).fill(0);
-      
+
       dataItems.forEach(item => {
         const d = new Date(item.createdAt || item.scheduledAt || now);
         if (d >= startOfYear) {
@@ -140,7 +140,7 @@ export default function DashboardOverview({
           counts[quarterIndex]++;
         }
       });
-      
+
       const maxCount = Math.max(...counts, 1);
       return quarters.map((q, i) => ({
         label: q,
@@ -157,7 +157,7 @@ export default function DashboardOverview({
     <div className="flex flex-col gap-6 animate-fade-in">
       {/* Top KPI Metrics Row (4 Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
+
         {/* Card 1: Total Leads */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-[135px]">
           <div className="flex justify-between items-start">
@@ -239,7 +239,7 @@ export default function DashboardOverview({
         <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-[135px]">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Pending Callbacks</span>
+              <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Pending FollowUp</span>
               <span className="text-2xl font-extrabold text-slate-800 mt-1 block">
                 {pendingTodosCount} / {todos.length}
               </span>
@@ -257,9 +257,9 @@ export default function DashboardOverview({
               <span>{todoCompletionPct}%</span>
             </div>
             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-              <div 
-                className="bg-amber-500 h-full transition-all duration-500" 
-                style={{ width: `${todoCompletionPct}%` }} 
+              <div
+                className="bg-amber-500 h-full transition-all duration-500"
+                style={{ width: `${todoCompletionPct}%` }}
               />
             </div>
           </div>
@@ -269,14 +269,14 @@ export default function DashboardOverview({
 
       {/* Middle Row (Analytics Chart + Interactive To-Do + Earnings) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Analytics Box: Call Volume SVG Bar Graph */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col justify-between h-[360px]">
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-slate-800 text-sm">Leads Volume Report</h3>
-              <select 
-                value={reportTimeframe} 
+              <select
+                value={reportTimeframe}
                 onChange={(e) => setReportTimeframe(e.target.value)}
                 className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded border-none outline-none cursor-pointer"
               >
@@ -287,15 +287,15 @@ export default function DashboardOverview({
             </div>
             <p className="text-xs text-slate-400 font-semibold mb-6">Total number of leads generated</p>
           </div>
-          
+
           {/* SVG Bar Chart */}
           <div className="flex-1 flex items-end justify-between gap-3 px-2 h-44">
             {chart1Data.map((item, idx) => (
               <div key={idx} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-full bg-slate-50 hover:bg-slate-100 rounded-t-md relative h-40 flex items-end overflow-hidden">
-                  <div 
-                    className="w-full bg-sky-500 rounded-t-md group-hover:bg-sky-600 transition-all duration-500" 
-                    style={{ height: item.pct }} 
+                  <div
+                    className="w-full bg-sky-500 rounded-t-md group-hover:bg-sky-600 transition-all duration-500"
+                    style={{ height: item.pct }}
                   />
                 </div>
                 <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-700 transition-colors">
@@ -311,15 +311,15 @@ export default function DashboardOverview({
           <div>
             <h3 className="font-bold text-slate-800 text-sm mb-1">To-Do Checklist</h3>
             <p className="text-xs text-slate-400 font-semibold mb-4">Pending client follow-up calls</p>
-            
+
             {/* Todo Items Container */}
             <div className="flex flex-col gap-2 overflow-y-auto max-h-[195px] pr-1">
               {todos.map((todo) => (
                 <div key={todo.id} className="flex items-center justify-between bg-slate-55 border border-slate-100/60 p-2.5 rounded-lg text-xs font-semibold hover:border-slate-200 transition-colors">
                   <div className="flex items-center gap-2.5">
-                    <input 
-                      type="checkbox" 
-                      checked={todo.completed} 
+                    <input
+                      type="checkbox"
+                      checked={todo.completed}
                       onChange={() => toggleTodo(todo.id)}
                       className="w-4 h-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500/10 cursor-pointer"
                     />
@@ -327,7 +327,7 @@ export default function DashboardOverview({
                       {todo.text}
                     </span>
                   </div>
-                  <button 
+                  <button
                     onClick={() => deleteTodo(todo.id)}
                     className="text-slate-300 hover:text-rose-500 transition-colors cursor-pointer p-0.5"
                   >
@@ -363,8 +363,8 @@ export default function DashboardOverview({
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-slate-800 text-sm">Activity Report</h3>
-              <select 
-                value={secondReportTimeframe} 
+              <select
+                value={secondReportTimeframe}
                 onChange={(e) => setSecondReportTimeframe(e.target.value)}
                 className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-1 rounded border-none outline-none cursor-pointer"
               >
@@ -375,15 +375,15 @@ export default function DashboardOverview({
             </div>
             <p className="text-xs text-slate-400 font-semibold mb-6">Total number of outbound calls & activity</p>
           </div>
-          
+
           {/* Bar Chart 2 */}
           <div className="flex-1 flex items-end justify-between gap-3 px-2 h-44">
             {chart2Data.map((item, idx) => (
               <div key={idx} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-full bg-slate-50 hover:bg-slate-100 rounded-t-md relative h-40 flex items-end overflow-hidden">
-                  <div 
-                    className="w-full bg-emerald-500 rounded-t-md group-hover:bg-emerald-600 transition-all duration-500" 
-                    style={{ height: item.pct }} 
+                  <div
+                    className="w-full bg-emerald-500 rounded-t-md group-hover:bg-emerald-600 transition-all duration-500"
+                    style={{ height: item.pct }}
                   />
                 </div>
                 <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-700 transition-colors">
@@ -398,7 +398,7 @@ export default function DashboardOverview({
 
       {/* Bottom Row: Active Leads Table + Active Geographies */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Active Leads List */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm lg:col-span-2 overflow-hidden flex flex-col justify-between">
           <div>
@@ -407,7 +407,7 @@ export default function DashboardOverview({
                 <h3 className="font-bold text-slate-800 text-sm">Leads Overview</h3>
                 <p className="text-xs text-slate-400 font-semibold mt-1">Status of current inbound calling campaigns</p>
               </div>
-              <button 
+              <button
                 onClick={() => setActiveTab('leads')}
                 className="text-xs font-bold text-sky-500 hover:text-sky-600 transition-colors flex items-center gap-1 cursor-pointer"
               >
@@ -445,12 +445,11 @@ export default function DashboardOverview({
                         </div>
                       </td>
                       <td className="py-3.5 pr-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                          lead.status === 'Active' ? 'bg-sky-50 text-sky-600 border border-sky-100' :
-                          lead.status === 'Contacted' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                          lead.status === 'New' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                          'bg-slate-50 text-slate-500 border border-slate-100'
-                        }`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${lead.status === 'Active' ? 'bg-sky-50 text-sky-600 border border-sky-100' :
+                            lead.status === 'Contacted' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                              lead.status === 'New' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                'bg-slate-50 text-slate-500 border border-slate-100'
+                          }`}>
                           {lead.status}
                         </span>
                       </td>
