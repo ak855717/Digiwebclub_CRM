@@ -36,6 +36,9 @@ export default function LeadsManager({ leads, setLeads, user }) {
   // Modal control states
   const [leadModal, setLeadModal] = useState({ isOpen: false, type: 'add', leadId: null });
   const [columnModal, setColumnModal] = useState({ isOpen: false });
+  const [remarksModal, setRemarksModal] = useState({ isOpen: false, lead: null });
+  const [newRemarkText, setNewRemarkText] = useState('');
+  const [isSubmittingRemark, setIsSubmittingRemark] = useState(false);
 
   // Form states
   const [formValues, setFormValues] = useState({});
@@ -240,6 +243,7 @@ export default function LeadsManager({ leads, setLeads, user }) {
     }
 
     const payload = { ...formValues };
+    delete payload.remarks;
 
     try {
       if (leadModal.type === 'add') {
@@ -310,6 +314,62 @@ export default function LeadsManager({ leads, setLeads, user }) {
   const handleDeleteColumn = (key, label) => {
     if (window.confirm(`Delete custom column "${label}"? This will hide the column data.`)) {
       setCustomColumns(prev => prev.filter(c => c.key !== key));
+    }
+  };
+
+  // Handle Adding Remark
+  const handleAddRemarkSubmit = async (e) => {
+    e.preventDefault();
+    if (!newRemarkText.trim() || !remarksModal.lead) return;
+    setIsSubmittingRemark(true);
+    try {
+      const response = await fetch(`/api/leads/${remarksModal.lead.id}/remarks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || user?._id || '',
+          'x-user-name': user?.name || ''
+        },
+        body: JSON.stringify({ text: newRemarkText })
+      });
+      const data = await response.json();
+      if (data.success) {
+        const updatedLead = { ...data.lead, id: data.lead._id };
+        setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
+        setRemarksModal({ isOpen: true, lead: updatedLead });
+        setNewRemarkText('');
+      } else {
+        alert('Failed to add remark: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Error adding remark:', err);
+      alert('Error adding remark. Is the backend running?');
+    } finally {
+      setIsSubmittingRemark(false);
+    }
+  };
+
+  // Handle Deleting Remark
+  const handleDeleteRemark = async (remarkId) => {
+    if (!window.confirm('Are you sure you want to delete this remark?')) return;
+    try {
+      const response = await fetch(`/api/leads/${remarksModal.lead.id}/remarks/${remarkId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': user?.id || user?._id || ''
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        const updatedLead = { ...data.lead, id: data.lead._id };
+        setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
+        setRemarksModal({ isOpen: true, lead: updatedLead });
+      } else {
+        alert('Failed to delete remark: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Error deleting remark:', err);
+      alert('Error deleting remark.');
     }
   };
 
@@ -406,6 +466,7 @@ export default function LeadsManager({ leads, setLeads, user }) {
                     </div>
                   </th>
                 ))}
+                <th className="p-4 border-r border-slate-100/60 min-w-[220px]">Remarks & Notes</th>
                 <th className="p-4 text-center w-28">Actions</th>
               </tr>
             </thead>
@@ -421,6 +482,41 @@ export default function LeadsManager({ leads, setLeads, user }) {
                         {renderCellContent(col, lead)}
                       </td>
                     ))}
+                    <td className="p-4 border-r border-slate-100/60 min-w-[220px] max-w-[280px]">
+                      {(() => {
+                        const remarks = lead.remarks || [];
+                        const latestRemark = remarks.length > 0 ? remarks[remarks.length - 1] : null;
+                        return (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            {latestRemark ? (
+                              <div 
+                                onClick={() => { setRemarksModal({ isOpen: true, lead }); setNewRemarkText(''); }}
+                                className="w-full bg-slate-50 hover:bg-sky-50/60 border border-slate-200/80 hover:border-sky-200 p-2 rounded-lg cursor-pointer transition-all group/rem shadow-3xs"
+                              >
+                                <p className="text-xs text-slate-700 font-semibold line-clamp-2 italic">&quot;{latestRemark.text}&quot;</p>
+                                <div className="flex items-center justify-between mt-1 pt-1 border-t border-slate-100 text-[10px] text-slate-400 font-medium">
+                                  <span className="truncate max-w-[120px]" title={`Added by ${latestRemark.addedBy}`}>
+                                    👤 <strong className="text-slate-600">{latestRemark.addedBy || 'User'}</strong>
+                                  </span>
+                                  <span>
+                                    {latestRemark.createdAt ? new Date(latestRemark.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-slate-300 text-xs italic">No remarks yet</span>
+                            )}
+                            <button
+                              onClick={() => { setRemarksModal({ isOpen: true, lead }); setNewRemarkText(''); }}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100/80 px-2 py-1 rounded-md transition-all cursor-pointer border border-sky-100 shadow-3xs"
+                            >
+                              <span>💬</span>
+                              <span>{remarks.length > 0 ? `View All (${remarks.length}) / Add Note` : '+ Add Remark'}</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="p-4 text-center">
                       <div className="inline-flex items-center gap-1.5">
                         {(canEditLeads || canDeleteLeads) ? (
@@ -451,7 +547,7 @@ export default function LeadsManager({ leads, setLeads, user }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={allColumns.length + 2} className="p-12 text-center text-slate-400 font-semibold text-xs">
+                  <td colSpan={allColumns.length + 3} className="p-12 text-center text-slate-400 font-semibold text-xs">
                     No leads found matching your search and filter criteria.
                   </td>
                 </tr>
@@ -678,6 +774,119 @@ export default function LeadsManager({ leads, setLeads, user }) {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Customer Remarks & Notes Modal */}
+      {remarksModal.isOpen && remarksModal.lead && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200/80 w-full max-w-xl overflow-hidden animate-slide-up flex flex-col max-h-[85vh]">
+            {/* Modal Header */}
+            <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center font-extrabold text-sm">
+                  💬
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <span>Remarks & Notes</span>
+                    <span className="bg-slate-200/70 text-slate-700 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                      {remarksModal.lead.remarks?.length || 0}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+                    Customer: <span className="text-slate-800 font-bold">{remarksModal.lead.name}</span> {remarksModal.lead.company ? `(${remarksModal.lead.company})` : ''}
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setRemarksModal({ isOpen: false, lead: null })}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm cursor-pointer transition-colors p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Remarks List / Timeline */}
+            <div className="overflow-y-auto p-6 flex-1 flex flex-col gap-3 max-h-[45vh] bg-slate-50/30">
+              {remarksModal.lead.remarks && remarksModal.lead.remarks.length > 0 ? (
+                [...remarksModal.lead.remarks].reverse().map((remark, idx) => (
+                  <div key={remark._id || idx} className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-xs hover:border-slate-300 transition-all flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-xs border-b border-slate-100 pb-2">
+                      <div className="flex items-center gap-2 font-bold text-slate-700">
+                        <span className="w-5 h-5 rounded-full bg-sky-50 border border-sky-100 text-sky-600 flex items-center justify-center text-[10px]">👤</span>
+                        <span>{remark.addedBy || 'User'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold text-slate-400">
+                          🕒 {remark.createdAt ? new Date(remark.createdAt).toLocaleString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                          }) : 'Just now'}
+                        </span>
+                        {(user?.role === 'admin' || user?.name === remark.addedBy) && remark._id && (
+                          <button
+                            onClick={() => handleDeleteRemark(remark._id)}
+                            className="text-slate-300 hover:text-rose-500 text-xs ml-1 transition-colors cursor-pointer"
+                            title="Delete remark"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-700 font-medium whitespace-pre-wrap leading-relaxed pl-1">
+                      {remark.text}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-slate-400">
+                  <span className="text-2xl">📝</span>
+                  <span className="text-xs font-bold text-slate-600">No Remarks Yet</span>
+                  <p className="text-[10px] font-medium max-w-xs">
+                    Be the first to add a note or observation about this customer using the form below.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Add Remark Input Form */}
+            <form onSubmit={handleAddRemarkSubmit} className="bg-white border-t border-slate-200/80 p-4 flex flex-col gap-3 shrink-0 shadow-lg">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                <span>Add New Remark</span>
+                <span className="text-slate-400 font-normal">Adding as: <strong className="text-slate-600">{user?.name || 'User'}</strong></span>
+              </label>
+              <div className="flex gap-2.5 items-end">
+                <textarea
+                  value={newRemarkText}
+                  onChange={(e) => setNewRemarkText(e.target.value)}
+                  placeholder="Write customer feedback, call summary, or important notes here..."
+                  rows={2}
+                  className="flex-1 rounded-lg border border-slate-200 p-2.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all resize-none bg-slate-50/50 focus:bg-white"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmittingRemark || !newRemarkText.trim()}
+                  className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-300 text-white font-bold text-xs uppercase rounded-lg shadow-md shadow-sky-500/10 transition-all cursor-pointer h-10 flex items-center justify-center gap-1.5 min-w-[110px]"
+                >
+                  {isSubmittingRemark ? (
+                    <span>Saving...</span>
+                  ) : (
+                    <>
+                      <span>✨ Add</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
